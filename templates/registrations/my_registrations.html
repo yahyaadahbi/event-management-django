@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}My Tickets — EventHub{% endblock %}
+
+{% block content %}
+<div class="page-header-simple">
+  <div class="container">
+    <h1 class="page-title">My Tickets</h1>
+    <p class="page-subtitle">All your event registrations in one place</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <!-- Stats strip -->
+  <div class="row g-3 mb-5 justify-content-center">
+    <div class="col-md-4 col-lg-3">
+      <div class="stat-card card-modern p-4 text-center">
+        <div class="stat-icon stat-icon-blue"><i class="bi bi-ticket-perforated"></i></div>
+        <div class="stat-num">{{ confirmed_count }}</div>
+        <div class="stat-label">Active Tickets</div>
+      </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <div class="stat-card card-modern p-4 text-center">
+        <div class="stat-icon stat-icon-yellow"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-num">{{ pending_payment_count }}</div>
+        <div class="stat-label">Pending Payments</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registrations list -->
+  {% if registrations %}
+  <div class="registrations-list">
+    {% for reg in registrations %}
+    <div class="reg-item card-modern p-4 mb-3 {% if reg.status == 'cancelled' %}reg-cancelled{% endif %}">
+      <div class="row align-items-center g-3">
+
+        <!-- Event image -->
+        <div class="col-auto">
+          <div class="reg-thumb">
+            {% if reg.event.image %}
+            <img src="{{ reg.event.image.url }}" alt="{{ reg.event.title }}" />
+            {% else %}
+            <div class="reg-thumb-placeholder" style="background: {{ reg.event.category.color|default:'#6366f1' }}18">
+              <i class="bi {{ reg.event.category.icon|default:'bi-calendar-event' }}" style="color: {{ reg.event.category.color|default:'#6366f1' }}"></i>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="col">
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+            <span class="reg-status-badge status-{{ reg.status }}">{{ reg.get_status_display }}</span>
+            <span class="badge {% if reg.payment_status == 'paid' or reg.payment_status == 'not_required' %}bg-success-subtle text-success{% elif reg.payment_status == 'rejected' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+              Payment: {{ reg.get_payment_status_display }}
+            </span>
+            {% if reg.ticket_type %}
+            <span class="badge bg-light text-dark">{{ reg.ticket_type.name }}</span>
+            {% endif %}
+          </div>
+          <h5 class="mb-1">
+            <a href="{{ reg.event.get_absolute_url }}" class="text-decoration-none">{{ reg.event.title }}</a>
+          </h5>
+          <div class="text-muted small d-flex flex-wrap gap-3">
+            <span><i class="bi bi-calendar3 me-1"></i>{{ reg.event.event_date|date:"M d, Y H:i" }}</span>
+            <span><i class="bi bi-geo-alt me-1"></i>{{ reg.event.location }}</span>
+            <span><i class="bi bi-clock me-1"></i>Registered {{ reg.created_at|date:"M d, Y" }}</span>
+          </div>
+          <div class="text-muted small mt-1">
+            <i class="bi bi-upc me-1"></i>Code: <code>{{ reg.ticket_code|stringformat:"s"|slice:":8"|upper }}…</code>
+          </div>
+          {% if reg.payment_code %}
+          <div class="text-muted small mt-1">
+            <i class="bi bi-credit-card me-1"></i>Payment Code: <code>{{ reg.payment_code }}</code>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="col-auto d-flex flex-column gap-2">
+          {% if reg.status == 'confirmed' %}
+          <a href="{% url 'ticket_detail' pk=reg.pk %}" class="btn btn-primary-custom btn-sm">
+            <i class="bi bi-eye me-1"></i>View Ticket
+          </a>
+          <a href="{% url 'download_pdf' pk=reg.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-download me-1"></i>Download PDF
+          </a>
+          {% if reg.payment_status != 'paid' %}
+          <form method="post" action="{% url 'cancel_registration' pk=reg.pk %}">
+            {% csrf_token %}
+            <button type="button" class="btn btn-outline-danger btn-sm w-100"
+                    onclick="if(confirm('Cancel this registration?')) this.form.submit()">
+              <i class="bi bi-x me-1"></i>Cancel
+            </button>
+          </form>
+          {% else %}
+          <span class="text-muted small text-center">Paid ticket cannot be cancelled</span>
+          {% endif %}
+          {% elif reg.status == 'pending' and reg.payment_status != 'not_required' %}
+          <form method="post" action="{% url 'submit_payment_proof' pk=reg.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-2">
+              <input type="file" name="payment_proof" class="form-control form-control-sm" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn btn-warning btn-sm w-100">
+              <i class="bi bi-upload me-1"></i>Submit Payment Proof
+            </button>
+          </form>
+          <form method="post" action="{% url 'cancel_registration' pk=reg.pk %}">
+            {% csrf_token %}
+            <button type="button" class="btn btn-outline-danger btn-sm w-100"
+                    onclick="if(confirm('Cancel this pending registration?')) this.form.submit()">
+              <i class="bi bi-x me-1"></i>Cancel
+            </button>
+          </form>
+          <small class="text-muted text-center">Use code <strong>{{ reg.payment_code }}</strong> when paying.</small>
+          {% else %}
+          <span class="text-muted small">No actions available</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state text-center py-5">
+    <div class="empty-icon"><i class="bi bi-ticket-perforated"></i></div>
+    <h4>No registrations yet</h4>
+    <p class="text-muted">Start by browsing our upcoming events.</p>
+    <a href="{% url 'event_list' %}" class="btn btn-primary-custom">Explore Events</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

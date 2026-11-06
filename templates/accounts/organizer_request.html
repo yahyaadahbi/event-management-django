@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Request Organizer Access — EventHub{% endblock %}
+
+{% block content %}
+<div class="page-header-simple">
+  <div class="container">
+    <h1 class="page-title">Request Organizer Access</h1>
+    <p class="page-subtitle">Tell us how you plan to host and manage events</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card-modern p-5">
+
+        {% if organizer_request and organizer_request.status == 'pending' %}
+        <div class="alert alert-warning border mb-4">
+          <div class="fw-600 mb-1"><i class="bi bi-hourglass-split me-2"></i>Request pending</div>
+          <div class="small">Your organizer request was sent and is waiting for admin review.</div>
+        </div>
+        {% elif organizer_request and organizer_request.status == 'approved' %}
+        <div class="alert alert-success border mb-4">
+          <div class="fw-600 mb-1"><i class="bi bi-check-circle me-2"></i>Request approved</div>
+          <div class="small">Your account is approved for organizer access.</div>
+        </div>
+        {% elif organizer_request and organizer_request.status == 'rejected' %}
+        <div class="alert alert-danger border mb-4">
+          <div class="fw-600 mb-1"><i class="bi bi-x-circle me-2"></i>Previous request rejected</div>
+          <div class="small">You can submit a new request with more details.</div>
+        </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-500">Why do you need organizer access?</label>
+            {{ form.motivation }}
+            {% if form.motivation.errors %}
+            <div class="invalid-feedback d-block">{{ form.motivation.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary-custom">
+              <i class="bi bi-send me-2"></i>Submit Request
+            </button>
+            <a href="{% url 'profile' %}" class="btn btn-ghost">Back to Profile</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

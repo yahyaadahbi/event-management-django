@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Event — EventHub{% endblock %}
+
+{% block content %}
+<div class="page-header-simple">
+  <div class="container">
+    <h1 class="page-title">{{ action }} Event</h1>
+    <p class="page-subtitle">{% if action == 'Create' %}Launch your next event on EventHub{% else %}Update your event details{% endif %}</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+
+      <!-- Step indicator -->
+      <div class="step-indicator mb-5">
+        <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Details</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Tickets</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Review</span></div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="eventForm">
+        {% csrf_token %}
+
+        <!-- ── Step 1: Event Details ───────────────────────────── -->
+        <div class="form-step active" id="step1">
+          <div class="card-modern p-5 mb-4">
+            <h4 class="mb-4"><i class="bi bi-info-circle me-2 text-primary"></i>Event Details</h4>
+
+            <div class="mb-4">
+              <label class="form-label fw-500">Event Title <span class="text-danger">*</span></label>
+              {{ form.title }}
+              {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-500">Description <span class="text-danger">*</span></label>
+              {{ form.description }}
+              {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors }}</div>{% endif %}
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-500">Category</label>
+                {{ form.category }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-500">Status</label>
+                {{ form.status }}
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-500">Event Date & Time <span class="text-danger">*</span></label>
+              {{ form.event_date }}
+              {% if form.event_date.errors %}<div class="invalid-feedback d-block">{{ form.event_date.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-500">Location <span class="text-danger">*</span></label>
+              {{ form.location }}
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-500">Max Capacity</label>
+                {{ form.capacity_max }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-500">Base Price ($)</label>
+                {{ form.price }}
+                <small class="text-muted">Set to 0 for a free event</small>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-500">Cover Image</label>
+              {{ form.image }}
+              <div class="image-preview-wrap mt-2" id="imagePreviewWrap" style="display:none">
+                <img id="imagePreview" class="img-fluid rounded" style="max-height:200px" alt="Preview" />
+              </div>
+              {% if event and event.image %}
+              <div class="mt-2">
+                <small class="text-muted">Current: </small>
+                <img src="{{ event.image.url }}" class="img-fluid rounded" style="max-height:120px" />
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="form-check">
+              {{ form.is_featured }}
+              <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+                <i class="bi bi-stars me-1 text-warning"></i> Feature this event on the homepage
+              </label>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger-modern mt-3">{{ form.non_field_errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-primary-custom btn-lg" onclick="goToStep(2)">
+              Next: Ticket Types <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Step 2: Ticket Types ───────────────────────────── -->
+        <div class="form-step" id="step2">
+          <div class="card-modern p-5 mb-4">
+            <h4 class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i>Ticket Types</h4>
+            <p class="text-muted mb-4">Define ticket tiers (e.g., VIP, Standard, Early Bird). Leave empty to use base price only.</p>
+
+            {{ ticket_formset.management_form }}
+
+            <div id="ticketFormsContainer">
+              {% for tform in ticket_formset %}
+              <div class="ticket-type-form-row card-modern p-4 mb-3" id="ticketForm{{ forloop.counter0 }}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="mb-0">Ticket Tier {{ forloop.counter }}</h6>
+                  {% if not forloop.first %}
+                  <button type="button" class="btn btn-sm btn-ghost text-danger remove-ticket-form">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label">Name</label>
+                    {{ tform.name }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Price ($)</label>
+                    {{ tform.price }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Quantity</label>
+                    {{ tform.quantity }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Description</label>
+                    {{ tform.description }}
+                  </div>
+                  {% if tform.DELETE %}
+                  <div class="d-none">{{ tform.DELETE }}{{ tform.id }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <button type="button" class="btn btn-ghost mt-2" id="addTicketType">
+              <i class="bi bi-plus-circle me-2"></i>Add Ticket Type
+            </button>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-ghost btn-lg" onclick="goToStep(1)">
+              <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+            <button type="button" class="btn btn-primary-custom btn-lg" onclick="goToStep(3)">
+              Review & Submit <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Step 3: Review ─────────────────────────────────── -->
+        <div class="form-step" id="step3">
+          <div class="card-modern p-5 mb-4">
+            <h4 class="mb-4"><i class="bi bi-check2-circle me-2 text-primary"></i>Review & Submit</h4>
+            <div id="reviewSummary" class="review-summary">
+              <p class="text-muted">Please review your event details before submitting.</p>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-ghost btn-lg" onclick="goToStep(2)">
+              <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+            <button type="submit" class="btn btn-success-custom btn-lg" id="submitBtn">
+              <i class="bi bi-check2 me-2"></i>{{ action }} Event
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/event_form.js"></script>
+{% endblock %}

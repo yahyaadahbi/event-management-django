@@ -1,0 +1,516 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.title }} — EventHub{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="event-detail-hero">
+  {% if event.image %}
+  <img src="{{ event.image.url }}" alt="{{ event.title }}" class="event-detail-hero-img" />
+  <div class="event-detail-hero-overlay"></div>
+  {% else %}
+  <div class="event-detail-hero-placeholder" style="background: linear-gradient(135deg, {{ event.category.color|default:'#6366f1' }}33, {{ event.category.color|default:'#6366f1' }}11)">
+    <i class="bi {{ event.category.icon|default:'bi-calendar-event' }}" style="font-size:6rem; color: {{ event.category.color|default:'#6366f1' }}44"></i>
+  </div>
+  {% endif %}
+</div>
+
+<div class="container py-5">
+  <div class="row g-5">
+
+    <!-- ── Left: Details ─────────────────────────────────────────── -->
+    <div class="col-lg-8">
+
+      <!-- Breadcrumb -->
+      <nav class="mb-3">
+        <ol class="breadcrumb breadcrumb-modern">
+          <li class="breadcrumb-item"><a href="/">Home</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'event_list' %}">Events</a></li>
+          <li class="breadcrumb-item active">{{ event.title|truncatechars:40 }}</li>
+        </ol>
+      </nav>
+
+      <!-- Header -->
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        {% if event.category %}
+        <span class="badge-category-lg" style="color: {{ event.category.color }}; background: {{ event.category.color }}15">
+          <i class="bi {{ event.category.icon }} me-1"></i>{{ event.category.name }}
+        </span>
+        {% endif %}
+        <span class="event-status-badge-lg {% if event.is_past %}status-closed{% else %}status-{{ event.status }}{% endif %}">
+          {% if event.is_past %}Ended{% else %}{{ event.get_status_display }}{% endif %}
+        </span>
+        {% if event.is_featured %}
+        <span class="badge-featured"><i class="bi bi-stars me-1"></i>Featured</span>
+        {% endif %}
+      </div>
+
+      <h1 class="event-detail-title">{{ event.title }}</h1>
+
+      <!-- Meta row -->
+      <div class="event-meta-row d-flex flex-wrap gap-3 my-4">
+        <div class="meta-item">
+          <i class="bi bi-calendar3"></i>
+          <div>
+            <span class="meta-label">Date</span>
+            <span class="meta-value">{{ event.event_date|date:"D, M d Y — H:i" }}</span>
+          </div>
+        </div>
+        <div class="meta-item">
+          <i class="bi bi-geo-alt-fill"></i>
+          <div>
+            <span class="meta-label">Location</span>
+            <span class="meta-value">{{ event.location }}</span>
+          </div>
+        </div>
+        <div class="meta-item">
+          <i class="bi bi-person-fill"></i>
+          <div>
+            <span class="meta-label">Organizer</span>
+            <span class="meta-value">{{ event.organizer.get_full_name|default:event.organizer.username }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capacity progress -->
+      <div class="capacity-progress-block mb-4">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-500">Capacity</span>
+          <span class="text-muted">{{ event.confirmed_registrations_count }} / {{ event.capacity_max }} registered</span>
+        </div>
+        <div class="progress capacity-progress-bar">
+          <div class="progress-bar {% if event.capacity_percentage >= 90 %}bg-danger{% elif event.capacity_percentage >= 70 %}bg-warning{% else %}bg-success{% endif %}"
+               style="width: {{ event.capacity_percentage }}%" role="progressbar"
+               data-capacity="{{ event.capacity_percentage }}">
+          </div>
+        </div>
+        <small class="text-muted mt-1 d-block">
+          {% if event.spots_remaining == 0 %}
+            😔 Sold out — no spots remaining
+          {% else %}
+            🎟 {{ event.spots_remaining }} spot{{ event.spots_remaining|pluralize }} remaining
+          {% endif %}
+        </small>
+      </div>
+
+      <!-- Description -->
+      <div class="event-description card-modern p-4 mb-4">
+        <h4 class="mb-3">About This Event</h4>
+        <div class="description-content">{{ event.description|linebreaks }}</div>
+      </div>
+
+      <!-- Gallery -->
+      {% if gallery_images %}
+      <div class="event-gallery mb-4">
+        <h4 class="mb-3">Gallery</h4>
+        <div class="gallery-grid">
+          {% for img in gallery_images %}
+          <a href="{{ img.image.url }}" target="_blank" class="gallery-item">
+            <img src="{{ img.image.url }}" alt="{{ img.caption }}" />
+            {% if img.caption %}<span class="gallery-caption">{{ img.caption }}</span>{% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Ticket Types -->
+      {% if ticket_types %}
+      <div class="ticket-types-block mb-4">
+        <h4 class="mb-3">Ticket Options</h4>
+        <div class="row g-3">
+          {% for tt in ticket_types %}
+          <div class="col-md-4">
+            <div class="ticket-type-card {% if tt.available == 0 %}sold-out{% endif %}">
+              <div class="tt-name">{{ tt.name }}</div>
+              <div class="tt-price">${{ tt.price }}</div>
+              {% if tt.description %}<div class="tt-desc text-muted small">{{ tt.description }}</div>{% endif %}
+              <div class="tt-availability mt-2">
+                {% if tt.available == 0 %}
+                <span class="badge bg-danger">Sold Out</span>
+                {% else %}
+                <span class="text-success small">{{ tt.available }} available</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Reviews -->
+      <div class="reviews-block">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h4 class="mb-0">Reviews
+            {% if avg_rating %}
+            <span class="avg-rating ms-2">
+              <i class="bi bi-star-fill text-warning"></i>
+              {{ avg_rating|floatformat:1 }}
+            </span>
+            {% endif %}
+          </h4>
+          <span class="text-muted">{{ reviews.count }} review{{ reviews.count|pluralize }}</span>
+        </div>
+
+        {% if user.is_authenticated and not user_review %}
+        <div class="review-form-box card-modern p-4 mb-4">
+          <h5 class="mb-3">Leave a Review</h5>
+          <form method="post" id="reviewForm">
+            {% csrf_token %}
+            <div class="star-rating-group mb-3">
+              {% for val, label in review_form.rating.field.choices %}
+              <label class="star-label">
+                <input type="radio" name="rating" value="{{ val }}" class="star-input d-none" />
+                <i class="bi bi-star-fill star-icon"></i>
+              </label>
+              {% endfor %}
+            </div>
+            {{ review_form.comment }}
+            <button type="submit" class="btn btn-primary-custom mt-3">Submit Review</button>
+          </form>
+        </div>
+        {% endif %}
+
+        <div class="reviews-list">
+          {% for review in reviews %}
+          <div class="review-item">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="d-flex gap-3 align-items-center">
+                <div class="reviewer-avatar">{{ review.user.username|slice:":1"|upper }}</div>
+                <div>
+                  <div class="fw-600">{{ review.user.get_full_name|default:review.user.username }}</div>
+                  <div class="stars-display">
+                    {% for i in "12345" %}
+                    <i class="bi bi-star{% if forloop.counter <= review.rating %}-fill text-warning{% endif %}"></i>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+            </div>
+            {% if review.comment %}
+            <p class="review-comment mt-2">{{ review.comment }}</p>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="empty-state text-center py-4">
+            <i class="bi bi-chat-dots fs-2 text-muted d-block mb-2"></i>
+            <p class="text-muted">No reviews yet. Be the first!</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Right: Registration Sidebar ───────────────────────────── -->
+    <div class="col-lg-4">
+      <div class="registration-sidebar sticky-top" style="top: 80px">
+
+        <div class="reg-sidebar-card card-modern p-4">
+          <!-- Price -->
+          <div class="reg-price mb-3">
+            {% if event.is_free %}
+            <span class="price-tag-free">Free Event</span>
+            {% else %}
+            <span class="price-from">From</span>
+            <span class="price-tag">${{ event.price }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Seats indicator -->
+          <div class="seats-indicator mb-4">
+            <div class="seats-bar">
+              <div class="seats-fill" style="width: {{ event.capacity_percentage }}%"
+                   id="seatsBar" data-capacity="{{ event.capacity_percentage }}"></div>
+            </div>
+            <small id="spotsText">
+              {% if event.spots_remaining == 0 %}Sold out{% else %}{{ event.spots_remaining }} spots left{% endif %}
+            </small>
+          </div>
+
+          <div class="event-countdown-preview mb-4" id="eventCountdownCard" data-event-date="{{ event.event_date|date:'c' }}" aria-live="polite">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="fw-bold text-white"><i class="bi bi-hourglass-split me-2"></i>Compte a rebours</span>
+              <span class="badge bg-light text-success">Live</span>
+            </div>
+            <div class="countdown-grid">
+              <div class="countdown-box">
+                <span class="countdown-value" id="detailCdDays">00</span>
+                <span class="countdown-label">JOURS</span>
+              </div>
+              <div class="countdown-box">
+                <span class="countdown-value" id="detailCdHours">00</span>
+                <span class="countdown-label">HEURES</span>
+              </div>
+              <div class="countdown-box">
+                <span class="countdown-value" id="detailCdMinutes">00</span>
+                <span class="countdown-label">MINUTES</span>
+              </div>
+              <div class="countdown-box">
+                <span class="countdown-value" id="detailCdSeconds">00</span>
+                <span class="countdown-label">SECONDES</span>
+              </div>
+            </div>
+            <small class="countdown-help" id="detailCountdownHelp">
+              Debut de l'evenement en cours de calcul...
+            </small>
+          </div>
+
+          {% if user.is_authenticated %}
+
+            {% if user_registration %}
+              {% if user_registration.status == 'confirmed' %}
+              <div class="alert alert-success-modern mb-3">
+                <i class="bi bi-check-circle-fill me-2"></i>You're registered!
+              </div>
+              <a href="{% url 'ticket_detail' pk=user_registration.pk %}" class="btn btn-success-custom w-100 mb-2">
+                <i class="bi bi-ticket me-2"></i>View My Ticket
+              </a>
+              {% if user_registration.payment_status != 'paid' %}
+              <form method="post" action="{% url 'cancel_registration' pk=user_registration.pk %}" id="cancelForm">
+                {% csrf_token %}
+                <button type="button" class="btn btn-outline-danger w-100 btn-sm" onclick="confirmCancel()">
+                  <i class="bi bi-x-circle me-1"></i>Cancel Registration
+                </button>
+              </form>
+              {% else %}
+              <div class="text-muted small">Paid ticket cannot be cancelled.</div>
+              {% endif %}
+              {% else %}
+              {% if user_registration.status == 'pending' %}
+              <div class="alert alert-warning-modern mb-3">
+                <i class="bi bi-hourglass-split me-2"></i>Registration pending payment verification.
+              </div>
+              <a href="{% url 'my_registrations' %}" class="btn btn-warning w-100 mb-2">
+                <i class="bi bi-upload me-2"></i>Submit Payment Proof
+              </a>
+              <form method="post" action="{% url 'cancel_registration' pk=user_registration.pk %}" id="cancelForm">
+                {% csrf_token %}
+                <button type="button" class="btn btn-outline-danger w-100 btn-sm" onclick="confirmCancel()">
+                  <i class="bi bi-x-circle me-1"></i>Cancel Registration
+                </button>
+              </form>
+              {% else %}
+              <div class="alert alert-warning-modern mb-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>Registration cancelled
+              </div>
+              {% endif %}
+              {% endif %}
+
+            {% elif not event.is_past and event.status == 'open' and event.spots_remaining > 0 %}
+            <!-- Registration form -->
+            <form method="post" action="{% url 'register_event' event_pk=event.pk %}" id="registerForm">
+              {% csrf_token %}
+              {% if ticket_types %}
+              <div class="mb-3">
+                <label class="filter-label">Select Ticket Type</label>
+                <select name="ticket_type" class="form-select" id="ticketTypeSelect">
+                  <option value="">General Admission — ${{ event.price }}</option>
+                  {% for tt in ticket_types %}
+                  {% if tt.available > 0 %}
+                  <option value="{{ tt.pk }}">${{ tt.price }} — {{ tt.name }} ({{ tt.available }} left)</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              {% endif %}
+              <button type="submit" class="btn btn-primary-custom w-100 btn-lg" id="registerBtn">
+                <i class="bi bi-ticket me-2"></i>Register Now
+              </button>
+            </form>
+
+            {% elif event.is_past %}
+            <button class="btn btn-secondary w-100 btn-lg registration-disabled-btn" disabled>
+              <i class="bi bi-x-circle me-2"></i>Event Ended
+            </button>
+
+            {% elif event.status == 'full' %}
+            <button class="btn btn-secondary w-100" disabled>
+              <i class="bi bi-lock me-2"></i>Event is Full
+            </button>
+            {% else %}
+            <button class="btn btn-secondary w-100" disabled>
+              <i class="bi bi-x-circle me-2"></i>Registrations Closed
+            </button>
+            {% endif %}
+
+          {% else %}
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary-custom w-100 btn-lg">
+            <i class="bi bi-person me-2"></i>Sign in to Register
+          </a>
+          {% endif %}
+
+          <!-- Bookmark -->
+          {% if user.is_authenticated %}
+          <button class="btn btn-outline-custom w-100 mt-2 bookmark-toggle"
+                  data-event="{{ event.pk }}"
+                  id="bookmarkBtn">
+            <i class="bi bi-bookmark{% if is_bookmarked %}-fill{% endif %} me-2"></i>
+            <span id="bookmarkText">{% if is_bookmarked %}Saved{% else %}Save Event{% endif %}</span>
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Organizer card -->
+        <div class="organizer-card card-modern p-4 mt-3">
+          <h6 class="mb-3">Organized by</h6>
+          <div class="d-flex align-items-center gap-3">
+            <div class="organizer-avatar">
+              {{ event.organizer.username|slice:":1"|upper }}
+            </div>
+            <div>
+              <div class="fw-600">{{ event.organizer.get_full_name|default:event.organizer.username }}</div>
+              <div class="text-muted small">Event Organizer</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Share -->
+        <div class="share-card card-modern p-4 mt-3">
+          <h6 class="mb-3">Share This Event</h6>
+          <div class="d-flex gap-2">
+            <button class="btn btn-icon share-btn" onclick="shareEvent('twitter')" title="Twitter"><i class="bi bi-twitter-x"></i></button>
+            <button class="btn btn-icon share-btn" onclick="shareEvent('facebook')" title="Facebook"><i class="bi bi-facebook"></i></button>
+            <button class="btn btn-icon share-btn" onclick="shareEvent('linkedin')" title="LinkedIn"><i class="bi bi-linkedin"></i></button>
+            <button class="btn btn-icon share-btn" onclick="copyLink()" title="Copy link" id="copyBtn"><i class="bi bi-link-45deg"></i></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const eventTitle = "{{ event.title|escapejs }}";
+const eventUrl = window.location.href;
+
+function padCountdownValue(value) {
+  return String(Math.max(0, value)).padStart(2, '0');
+}
+
+function initEventDetailCountdown() {
+  const card = document.getElementById('eventCountdownCard');
+  if (!card) return;
+
+  const targetRaw = card.dataset.eventDate;
+  const daysEl = document.getElementById('detailCdDays');
+  const hoursEl = document.getElementById('detailCdHours');
+  const minutesEl = document.getElementById('detailCdMinutes');
+  const secondsEl = document.getElementById('detailCdSeconds');
+  const helpEl = document.getElementById('detailCountdownHelp');
+
+  if (!targetRaw || !daysEl || !hoursEl || !minutesEl || !secondsEl || !helpEl) return;
+  const targetDate = new Date(targetRaw);
+  if (Number.isNaN(targetDate.getTime())) return;
+
+  const update = () => {
+    const diffMs = targetDate.getTime() - Date.now();
+
+    if (diffMs <= 0) {
+      daysEl.textContent = '00';
+      hoursEl.textContent = '00';
+      minutesEl.textContent = '00';
+      secondsEl.textContent = '00';
+      helpEl.textContent = "L'evenement a deja commence.";
+      return;
+    }
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    daysEl.textContent = padCountdownValue(days);
+    hoursEl.textContent = padCountdownValue(hours);
+    minutesEl.textContent = padCountdownValue(minutes);
+    secondsEl.textContent = padCountdownValue(seconds);
+    helpEl.textContent = `Debut prevu: ${targetDate.toLocaleString()}`;
+  };
+
+  update();
+  setInterval(update, 1000);
+}
+
+initEventDetailCountdown();
+
+function shareEvent(platform) {
+  const urls = {
+    twitter: `https://twitter.com/intent/tweet?text=Check out ${encodeURIComponent(eventTitle)}&url=${encodeURIComponent(eventUrl)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(eventUrl)}`,
+  };
+  window.open(urls[platform], '_blank', 'width=600,height=400');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(eventUrl).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '<i class="bi bi-check2"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-link-45deg"></i>', 2000);
+  });
+}
+
+function confirmCancel() {
+  if (confirm('Are you sure you want to cancel your registration?')) {
+    document.getElementById('cancelForm').submit();
+  }
+}
+
+// AJAX register
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('registerBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+    const formData = new FormData(registerForm);
+    const res = await fetch(registerForm.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData,
+    });
+    const data = await res.json();
+
+    if (data.status === 'ok') {
+      showToast(data.message, 'success');
+      setTimeout(() => window.location.href = data.ticket_url, 1200);
+    } else {
+      showToast(data.message, 'danger');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-ticket me-2"></i>Register Now';
+    }
+  });
+}
+
+// Bookmark toggle
+const bookmarkBtns = document.querySelectorAll('.bookmark-toggle');
+bookmarkBtns.forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const eventId = btn.dataset.event;
+    const res = await fetch(`/events/${eventId}/bookmark/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const data = await res.json();
+    const icon = btn.querySelector('i');
+    const text = document.getElementById('bookmarkText');
+    if (data.bookmarked) {
+      icon.className = 'bi bi-bookmark-fill me-2';
+      if (text) text.textContent = 'Saved';
+    } else {
+      icon.className = 'bi bi-bookmark me-2';
+      if (text) text.textContent = 'Save Event';
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+<!-- partials/event_list_item.html -->
+<a href="{{ event.get_absolute_url }}" class="event-list-item d-flex align-items-center gap-3 text-decoration-none">
+  <div class="event-list-date">
+    <span class="day">{{ event.event_date|date:"d" }}</span>
+    <span class="month">{{ event.event_date|date:"M" }}</span>
+  </div>
+  <div class="event-list-thumb">
+    {% if event.image %}
+    <img src="{{ event.image.url }}" alt="{{ event.title }}" />
+    {% else %}
+    <div class="thumb-placeholder" style="background: {{ event.category.color|default:'#6366f1' }}22">
+      <i class="bi {{ event.category.icon|default:'bi-calendar-event' }}" style="color: {{ event.category.color|default:'#6366f1' }}"></i>
+    </div>
+    {% endif %}
+  </div>
+  <div class="event-list-info flex-grow-1">
+    <h5 class="event-list-title mb-1">{{ event.title }}</h5>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if event.category %}
+      <span class="badge-category" style="color: {{ event.category.color }}; background: {{ event.category.color }}15">
+        {{ event.category.name }}
+      </span>
+      {% endif %}
+      <span class="text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ event.location|truncatechars:30 }}</span>
+    </div>
+  </div>
+  <div class="event-list-price text-end">
+    {% if event.is_free %}
+    <span class="price-free small">Free</span>
+    {% else %}
+    <span class="fw-600">${{ event.price }}</span>
+    {% endif %}
+    <div class="event-status-pill {% if event.is_past %}status-closed{% else %}status-{{ event.status }}{% endif %}">
+      {% if event.is_past %}Ended{% else %}{{ event.get_status_display }}{% endif %}
+    </div>
+  </div>
+</a>

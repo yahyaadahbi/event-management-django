@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — EventHub{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+  </div>
+  <div class="container">
+    <div class="row justify-content-center min-vh-80 align-items-center py-5">
+      <div class="col-md-6">
+        <div class="auth-card card-modern p-5">
+          <div class="auth-logo text-center mb-4">
+            <span class="brand-icon brand-icon-lg"><i class="bi bi-calendar-event-fill"></i></span>
+            <h2 class="auth-title mt-3">Join EventHub</h2>
+            <p class="text-muted">Create your free account in seconds</p>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-500">Username</label>
+              {{ form.username }}
+              {% if form.username.errors %}<div class="invalid-feedback d-block">{{ form.username.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-500">Email</label>
+              {{ form.email }}
+              {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-500">Password</label>
+              {{ form.password1 }}
+              {% if form.password1.errors %}<div class="invalid-feedback d-block">{{ form.password1.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-500">Confirm Password</label>
+              {{ form.password2 }}
+              {% if form.password2.errors %}<div class="invalid-feedback d-block">{{ form.password2.errors }}</div>{% endif %}
+            </div>
+
+            <div class="alert alert-light border mb-4">
+              <div class="fw-500 mb-1"><i class="bi bi-shield-lock me-2"></i>Organizer access is protected</div>
+              <div class="text-muted small">
+                New accounts are created as participants. You can request organizer access after signup, then admin approval is required.
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100 btn-lg">
+              <i class="bi bi-person-plus me-2"></i>Create Account
+            </button>
+          </form>
+
+          <div class="auth-divider my-4"><span>or</span></div>
+          <p class="text-center text-muted mb-0">
+            Already have an account?
+            <a href="{% url 'login' %}" class="auth-link fw-600">Sign in</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

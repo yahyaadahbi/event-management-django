@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Browse Events — EventHub{% endblock %}
+
+{% block content %}
+<div class="page-header-simple">
+  <div class="container">
+    <h1 class="page-title">Browse Events</h1>
+    <p class="page-subtitle">Discover {{ total_count }} event{{ total_count|pluralize }} waiting for you</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+
+    <!-- ── Sidebar Filters ───────────────────────────────────────── -->
+    <div class="col-lg-3">
+      <div class="filter-sidebar">
+        <div class="filter-sidebar-header">
+          <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filters</h5>
+          <a href="{% url 'event_list' %}" class="btn btn-sm btn-ghost">Reset</a>
+        </div>
+
+        <form method="get" id="filterForm">
+          <!-- Search -->
+          <div class="filter-group">
+            <label class="filter-label">Search</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              {{ filter.form.search }}
+            </div>
+          </div>
+
+          <!-- Category -->
+          <div class="filter-group">
+            <label class="filter-label">Category</label>
+            {{ filter.form.category }}
+          </div>
+
+          <!-- Status -->
+          <div class="filter-group">
+            <label class="filter-label">Status</label>
+            {{ filter.form.status }}
+          </div>
+
+          <!-- Price Range -->
+          <div class="filter-group">
+            <label class="filter-label">Price Range</label>
+            <div class="row g-2">
+              <div class="col-6">{{ filter.form.price_min }}</div>
+              <div class="col-6">{{ filter.form.price_max }}</div>
+            </div>
+          </div>
+
+          <!-- Date From -->
+          <div class="filter-group">
+            <label class="filter-label">From Date</label>
+            {{ filter.form.date_from }}
+          </div>
+
+          <!-- Free only -->
+          <div class="filter-group">
+            <div class="form-check">
+              {{ filter.form.is_free }}
+              <label class="form-check-label" for="{{ filter.form.is_free.id_for_label }}">Free events only</label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary-custom w-100">
+            <i class="bi bi-search me-2"></i>Apply Filters
+          </button>
+        </form>
+      </div>
+
+      <!-- Categories quick links -->
+      <div class="filter-sidebar mt-3">
+        <h6 class="filter-sidebar-header mb-0">By Category</h6>
+        <div class="category-list mt-3">
+          {% for cat in all_categories %}
+          <a href="?category={{ cat.id }}" class="category-list-item {% if filter.form.category.value == cat.id|stringformat:'s' %}active{% endif %}"
+             style="--cat-color: {{ cat.color }}">
+            <i class="bi {{ cat.icon }}"></i>
+            {{ cat.name }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Events Grid ───────────────────────────────────────────── -->
+    <div class="col-lg-9">
+
+      <!-- Toolbar -->
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <span class="text-muted">
+          Showing <strong>{{ page_obj.start_index }}</strong>–<strong>{{ page_obj.end_index }}</strong>
+          of <strong>{{ total_count }}</strong> events
+        </span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-icon view-toggle active" data-view="grid" title="Grid view">
+            <i class="bi bi-grid-3x3-gap"></i>
+          </button>
+          <button class="btn btn-icon view-toggle" data-view="list" title="List view">
+            <i class="bi bi-list-ul"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Event Grid -->
+      <div id="eventsGrid" class="row g-4">
+        {% for event in page_obj %}
+        <div class="col-md-6 col-xl-4 event-col">
+          {% include 'partials/event_card.html' with event=event %}
+        </div>
+        {% empty %}
+        <!-- Empty state -->
+        <div class="col-12">
+          <div class="empty-state text-center py-5">
+            <div class="empty-icon"><i class="bi bi-calendar-x"></i></div>
+            <h4>No events found</h4>
+            <p class="text-muted">Try adjusting your filters or search terms.</p>
+            <a href="{% url 'event_list' %}" class="btn btn-primary-custom">Clear Filters</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+      <nav class="mt-5 d-flex justify-content-center">
+        <ul class="pagination pagination-modern">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+          </li>
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

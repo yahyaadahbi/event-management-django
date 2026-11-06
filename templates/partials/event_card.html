@@ -1,0 +1,79 @@
+<!-- partials/event_card.html -->
+<div class="event-card {% if compact %}event-card-compact{% endif %} h-100">
+  <div class="event-card-image">
+    {% if event.image %}
+    <img src="{{ event.image.url }}" alt="{{ event.title }}" loading="lazy" />
+    {% else %}
+    <div class="event-card-placeholder" style="background: {{ event.category.color|default:'#6366f1' }}22">
+      <i class="bi {{ event.category.icon|default:'bi-calendar-event' }}" style="color: {{ event.category.color|default:'#6366f1' }}"></i>
+    </div>
+    {% endif %}
+
+    <!-- Status badge -->
+    <span class="event-status-badge {% if event.is_past %}status-closed{% else %}status-{{ event.status }}{% endif %}">
+      {% if event.is_past %}Ended{% else %}{{ event.get_status_display }}{% endif %}
+    </span>
+
+    <!-- Bookmark button (only for logged in users) -->
+    {% if user.is_authenticated %}
+    <button class="bookmark-btn {% if event in user.bookmarks.all %}active{% endif %}"
+            data-event="{{ event.id }}" title="Save event">
+      <i class="bi bi-bookmark{% if event in user.bookmarks.all %}-fill{% endif %}"></i>
+    </button>
+    {% endif %}
+
+    <!-- Free badge -->
+    {% if event.is_free %}
+    <span class="free-badge">FREE</span>
+    {% endif %}
+  </div>
+
+  <div class="event-card-body">
+    {% if event.category %}
+    <span class="event-category-tag" style="color: {{ event.category.color }}; background: {{ event.category.color }}18">
+      <i class="bi {{ event.category.icon }} me-1"></i>{{ event.category.name }}
+    </span>
+    {% endif %}
+
+    <h3 class="event-card-title">
+      <a href="{{ event.get_absolute_url }}">{{ event.title }}</a>
+    </h3>
+
+    {% if not compact %}
+    <p class="event-card-desc">{{ event.description|truncatechars:90 }}</p>
+    {% endif %}
+
+    <div class="event-card-meta">
+      <span><i class="bi bi-calendar3 me-1"></i>{{ event.event_date|date:"M d, Y" }}</span>
+      <span><i class="bi bi-geo-alt me-1"></i>{{ event.location|truncatechars:25 }}</span>
+    </div>
+
+    <!-- Capacity bar -->
+    <div class="capacity-bar mt-2">
+      <div class="capacity-bar-track">
+        <div class="capacity-bar-fill {% if event.capacity_percentage >= 90 %}danger{% elif event.capacity_percentage >= 70 %}warning{% endif %}"
+             style="width: {{ event.capacity_percentage }}%"></div>
+      </div>
+      <span class="capacity-text">
+        {% if event.spots_remaining == 0 %}
+          Sold out
+        {% else %}
+          {{ event.spots_remaining }} spots left
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="event-card-footer">
+    <div class="event-price">
+      {% if event.is_free %}
+      <span class="price-free">Free</span>
+      {% else %}
+      <span class="price-currency">$</span><span class="price-amount">{{ event.price }}</span>
+      {% endif %}
+    </div>
+    <a href="{{ event.get_absolute_url }}" class="btn btn-sm btn-primary-custom">
+      View Details <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+</div>

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Scan Tickets — EventHub{% endblock %}
+
+{% block content %}
+<div class="page-header-simple">
+  <div class="container">
+    <h1 class="page-title">QR Ticket Scanner</h1>
+    <p class="page-subtitle">Validate attendee tickets at the door</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card-modern p-5">
+        <div class="text-center mb-4">
+          <div class="scanner-icon mb-3">
+            <i class="bi bi-qr-code-scan"></i>
+          </div>
+          <h4>Enter Ticket Code</h4>
+          <p class="text-muted">Paste or type the ticket UUID to validate entry</p>
+        </div>
+
+        <form method="post" id="scanForm" action="{% url 'qr_scan' %}">
+          {% csrf_token %}
+          <div class="input-group mb-3">
+            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+            <input type="text" name="ticket_code" class="form-control form-control-lg"
+                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                   pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                   value="{{ code|default:'' }}"
+                   id="ticketCodeInput" autocomplete="off" />
+          </div>
+          <button type="submit" class="btn btn-primary-custom w-100 btn-lg">
+            <i class="bi bi-search me-2"></i>Validate Ticket
+          </button>
+        </form>
+
+        <!-- Result -->
+        {% if result %}
+        <div class="scan-result mt-4 {% if result.valid %}result-valid{% else %}result-invalid{% endif %}">
+          {% if result.valid %}
+          <div class="result-icon valid"><i class="bi bi-check-circle-fill"></i></div>
+          <h4 class="result-title text-success">✅ Valid Ticket</h4>
+          <div class="result-details">
+            <div class="result-row"><span>Attendee</span><strong>{{ result.participant }}</strong></div>
+            <div class="result-row"><span>Event</span><strong>{{ result.event }}</strong></div>
+            <div class="result-row"><span>Ticket Type</span><strong>{{ result.ticket_type }}</strong></div>
+            <div class="result-row"><span>Payment</span><strong>{{ result.payment_status|default:"-" }}</strong></div>
+            <div class="result-row"><span>Registered</span><strong>{{ result.registered_on }}</strong></div>
+          </div>
+          {% else %}
+          <div class="result-icon invalid"><i class="bi bi-x-circle-fill"></i></div>
+          <h4 class="result-title text-danger">❌ Invalid Ticket</h4>
+          <p class="text-muted">{{ result.error|default:"This ticket is not valid or has been cancelled." }}</p>
+          <p class="text-muted small">Status: <strong>{{ result.status }}</strong></p>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="card-modern p-4 mt-3">
+        <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>How to use</h6>
+        <ol class="text-muted small mb-0">
+          <li class="mb-1">Ask the attendee to show their ticket QR code or ticket code</li>
+          <li class="mb-1">Enter the ticket UUID in the field above</li>
+          <li class="mb-1">A green result = confirmed attendee; red = invalid/cancelled</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

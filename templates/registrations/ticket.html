@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Your Ticket — {{ registration.event.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+
+      <div class="ticket-container" id="ticketCard">
+
+        <!-- Ticket Header -->
+        <div class="ticket-header">
+          <div class="ticket-logo">
+            <i class="bi bi-calendar-event-fill me-2"></i>EventHub
+          </div>
+          <div class="ticket-label">OFFICIAL TICKET</div>
+        </div>
+
+        <!-- Perforated line -->
+        <div class="ticket-perforation"></div>
+
+        <!-- Event Info -->
+        <div class="ticket-body px-4 py-3">
+          {% if registration.event.category %}
+          <span class="ticket-category" style="color: {{ registration.event.category.color }}; background: {{ registration.event.category.color }}15">
+            <i class="bi {{ registration.event.category.icon }} me-1"></i>{{ registration.event.category.name }}
+          </span>
+          {% endif %}
+          <h2 class="ticket-event-title">{{ registration.event.title }}</h2>
+
+          <div class="ticket-details-grid">
+            <div class="ticket-detail">
+              <i class="bi bi-calendar3"></i>
+              <div>
+                <span class="detail-label">DATE & TIME</span>
+                <span class="detail-value">{{ registration.event.event_date|date:"D, M d Y — H:i" }}</span>
+              </div>
+            </div>
+            <div class="ticket-detail">
+              <i class="bi bi-geo-alt-fill"></i>
+              <div>
+                <span class="detail-label">LOCATION</span>
+                <span class="detail-value">{{ registration.event.location }}</span>
+              </div>
+            </div>
+            <div class="ticket-detail">
+              <i class="bi bi-person-fill"></i>
+              <div>
+                <span class="detail-label">ATTENDEE</span>
+                <span class="detail-value">{{ registration.participant.get_full_name|default:registration.participant.username }}</span>
+              </div>
+            </div>
+            <div class="ticket-detail">
+              <i class="bi bi-tag-fill"></i>
+              <div>
+                <span class="detail-label">TICKET TYPE</span>
+                <span class="detail-value">{{ registration.ticket_type.name|default:"General Admission" }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Perforated line 2 -->
+        <div class="ticket-perforation"></div>
+
+        <!-- QR Code section -->
+        <div class="ticket-qr-section px-4 py-4">
+          <div class="row align-items-center">
+            <div class="col">
+              <div class="ticket-code-block">
+                <span class="ticket-code-label">TICKET CODE</span>
+                <span class="ticket-code-value">{{ registration.ticket_code|stringformat:"s"|upper|slice:":18" }}…</span>
+              </div>
+              <div class="ticket-status mt-2">
+                <span class="status-pill status-{{ registration.status }}">
+                  <i class="bi bi-check-circle-fill me-1"></i>{{ registration.get_status_display|upper }}
+                </span>
+              </div>
+              <div class="mt-3 text-muted small">
+                <i class="bi bi-shield-check me-1"></i>Verified & Secured by EventHub
+              </div>
+            </div>
+            <div class="col-auto">
+              {% if registration.qr_code %}
+              <div class="ticket-qr-wrap">
+                <img src="{{ registration.qr_code.url }}" alt="QR Code" class="ticket-qr-img" />
+              </div>
+              {% else %}
+              <div class="ticket-qr-placeholder">
+                <i class="bi bi-qr-code fs-1"></i>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actions -->
+      <div class="d-flex gap-3 justify-content-center mt-4 flex-wrap">
+        <a href="{% url 'download_pdf' pk=registration.pk %}" class="btn btn-primary-custom btn-lg">
+          <i class="bi bi-file-pdf me-2"></i>Download PDF
+        </a>
+        <a href="{{ registration.event.get_absolute_url }}" class="btn btn-ghost btn-lg">
+          <i class="bi bi-calendar3 me-2"></i>View Event
+        </a>
+        <a href="{% url 'my_registrations' %}" class="btn btn-ghost btn-lg">
+          <i class="bi bi-arrow-left me-2"></i>All Tickets
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

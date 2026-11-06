@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}My Profile — EventHub{% endblock %}
+
+{% block content %}
+<div class="page-header-simple">
+  <div class="container">
+    <h1 class="page-title">My Profile</h1>
+    <p class="page-subtitle">Manage your account settings and preferences</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="row g-4">
+
+    <!-- ── Avatar sidebar ──────────────────────────────────────── -->
+    <div class="col-lg-3">
+      <div class="profile-sidebar card-modern p-4 text-center">
+        <div class="profile-avatar-wrap mb-3">
+          {% if user.photo %}
+          <img src="{{ user.photo.url }}" class="profile-avatar" alt="{{ user.username }}" id="avatarPreview" />
+          {% else %}
+          <div class="profile-avatar-initials" id="avatarInitials">{{ user.username|slice:":2"|upper }}</div>
+          {% endif %}
+          <label class="avatar-upload-btn" for="{{ form.photo.id_for_label }}" title="Change photo">
+            <i class="bi bi-camera-fill"></i>
+          </label>
+        </div>
+        <h5 class="mb-1">{{ user.get_full_name|default:user.username }}</h5>
+        <span class="role-badge role-{{ user.role }}">{{ user.get_role_display }}</span>
+        <div class="text-muted small mt-2">
+          <i class="bi bi-calendar3 me-1"></i>Joined {{ user.date_joined|date:"M Y" }}
+        </div>
+        <hr>
+        <div class="profile-stats">
+          {% if user.is_participant %}
+          <div class="stat-item">
+            <span class="stat-num">{{ user.registrations.count }}</span>
+            <span class="stat-name">Registrations</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">{{ user.bookmarks.count }}</span>
+            <span class="stat-name">Saved Events</span>
+          </div>
+          {% else %}
+          <div class="stat-item">
+            <span class="stat-num">{{ user.organized_events.count }}</span>
+            <span class="stat-name">Events Created</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick links -->
+      <div class="card-modern p-3 mt-3">
+        <div class="list-group list-group-flush">
+          <a href="{% url 'my_registrations' %}" class="list-group-item list-group-item-action border-0">
+            <i class="bi bi-ticket me-2"></i>My Tickets
+          </a>
+          <a href="{% url 'my_bookmarks' %}" class="list-group-item list-group-item-action border-0">
+            <i class="bi bi-bookmark me-2"></i>Saved Events
+          </a>
+          <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action border-0">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+          </a>
+          {% if user.is_participant %}
+          <a href="{% url 'organizer_request' %}" class="list-group-item list-group-item-action border-0">
+            <i class="bi bi-shield-check me-2"></i>Request Organizer Access
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Edit form ─────────────────────────────────────────────── -->
+    <div class="col-lg-9">
+      <div class="card-modern p-5">
+        {% if user.is_participant %}
+        <div class="alert alert-light border d-flex align-items-start gap-3 mb-4">
+          <i class="bi bi-shield-lock fs-5 mt-1"></i>
+          <div>
+            <div class="fw-600 mb-1">Organizer access requires admin approval</div>
+            {% if organizer_request %}
+              {% if organizer_request.status == 'pending' %}
+              <div class="small text-muted">Your request is pending review.</div>
+              {% elif organizer_request.status == 'approved' %}
+              <div class="small text-success">Your request has been approved.</div>
+              {% else %}
+              <div class="small text-danger">Your previous request was rejected. You can submit a new one.</div>
+              {% endif %}
+            {% else %}
+            <div class="small text-muted">Submit a request if you want to host and manage events.</div>
+            {% endif %}
+            <a href="{% url 'organizer_request' %}" class="btn btn-sm btn-primary-custom mt-2">
+              <i class="bi bi-send me-1"></i>Open Request Form
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+        <h4 class="mb-4">Edit Profile</h4>
+        <form method="post" enctype="multipart/form-data" id="profileForm">
+          {% csrf_token %}
+
+          <!-- Hidden file input for avatar -->
+          <div class="d-none">{{ form.photo }}</div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-500">First Name</label>
+              {{ form.first_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-500">Last Name</label>
+              {{ form.last_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-500">Email</label>
+              {{ form.email }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-500">Phone</label>
+              {{ form.phone }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-500">Bio</label>
+              {{ form.bio }}
+            </div>
+          </div>
+
+          {% for field in form %}
+          {% if field.errors %}
+          <div class="invalid-feedback d-block mt-1">{{ field.errors }}</div>
+          {% endif %}
+          {% endfor %}
+
+          <div class="d-flex gap-3 mt-4">
+            <button type="submit" class="btn btn-primary-custom">
+              <i class="bi bi-check2 me-2"></i>Save Changes
+            </button>
+            <a href="{% url 'profile' %}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Live avatar preview
+const photoInput = document.getElementById('{{ form.photo.id_for_label }}');
+if (photoInput) {
+  photoInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let img = document.getElementById('avatarPreview');
+      const initials = document.getElementById('avatarInitials');
+      if (!img) {
+        img = document.createElement('img');
+        img.id = 'avatarPreview';
+        img.className = 'profile-avatar';
+        if (initials) initials.replaceWith(img);
+        else document.querySelector('.profile-avatar-wrap').prepend(img);
+      }
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+</script>
+{% endblock %}
